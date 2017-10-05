@@ -1,1 +1,1 @@
-# crypto_volrateflow
+# "Volume Rate Flow" Calculator for Cryptocurrency Exchange

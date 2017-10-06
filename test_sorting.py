@@ -101,12 +101,14 @@ try:
 
         buy_volrateflow = (60.0 * buy_avg) / time_elapsed_buy
         sell_volrateflow = (60.0 * sell_avg) / time_elapsed_sell
+        buysell_differential = buy_volrateflow - sell_volrateflow
         match_volrateflow = (60.0 * match_avg) / time_elapsed_match
 
         print('VOLUME RATE FLOW')
-        print('Buy:   ' + str(buy_volrateflow) + ' $/min')
-        print('Sell:  ' + str(sell_volrateflow) + ' $/min')
-        print('Match: ' + str(match_volrateflow) + ' $/min')
+        print('Buy:          ' + str(buy_volrateflow) + ' $/min')
+        print('Sell:         ' + str(sell_volrateflow) + ' $/min')
+        print('Differential: ' + str(buysell_differential) + ' $/min')
+        print('Match:        ' + str(match_volrateflow) + ' $/min')
         print('----------------------------------------')
         print()
         

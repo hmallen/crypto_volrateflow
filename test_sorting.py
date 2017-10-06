@@ -56,7 +56,8 @@ print(wsClient.url, wsClient.products)
 
 try:
     print('Accumulating market data. Please wait...')
-    while (wsClient.message_count < 1000):
+    #while (wsClient.message_count < 1000):
+    while (len(match_data) == 0):
         time.sleep(1)
 
     print('Beginning analysis.')
@@ -66,10 +67,13 @@ try:
         sell_length = len(sell_data)
         sell_length_index = sell_length - 1
         match_length = len(match_data)
+        
+        """
         if match_length == 0:
             match_length_index = 0
         else:
             match_length_index = match_length - 1
+        """
 
         print('----------------------------------------')
         print('buy_length:   ' + str(buy_length))

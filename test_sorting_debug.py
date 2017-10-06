@@ -37,8 +37,9 @@ buy_data = deque(maxlen=data_length)
 sell_data = deque(maxlen=data_length)
 match_data = deque(maxlen=data_length_match)
 
-log_datetime = datetime.datetime.now()
-log_file = product + '--' + str(log_datetime) + '--' + 'volrateflow_log.csv'
+#log_datetime = datetime.datetime.now()
+#log_file = product + '--' + str(log_datetime) + '--' + 'volrateflow_log.csv'
+log_file = product + '--' + 'volrateflow_log.csv'
 
 
 class myWebsocketClient(gdax.WebsocketClient):

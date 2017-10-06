@@ -56,8 +56,7 @@ print(wsClient.url, wsClient.products)
 
 try:
     print('Accumulating market data. Please wait...')
-    #while (wsClient.message_count < 1000):
-    while (wsClient.message_count < 1000 and len(match_data) == 0):
+    while (wsClient.message_count < 1000):
         time.sleep(1)
 
     print('Beginning analysis.')

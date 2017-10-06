@@ -4,7 +4,7 @@ import gdax
 import time
 
 data_length = 1000
-data_length_match = data_length / 10
+data_length_match = int(data_length / 10)
 
 buy_data = deque(maxlen=data_length)
 sell_data = deque(maxlen=data_length)

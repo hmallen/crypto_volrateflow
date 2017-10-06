@@ -1,10 +1,17 @@
+#!/usr/env python3
+# TO DO:
+# - Matches per unit time
+# - Level 2 market data (?Level 1?)
+# - CSV logging
+
+import csv
 import datetime
 from collections import deque
 import gdax
 import time
 
 data_length = 1000
-data_length_match = int(data_length / 10)
+data_length_match = 100
 
 buy_data = deque(maxlen=data_length)
 sell_data = deque(maxlen=data_length)
@@ -56,7 +63,7 @@ print(wsClient.url, wsClient.products)
 
 try:
     print('Accumulating market data. Please wait...')
-    while (wsClient.message_count < 1000):
+    while (wsClient.message_count < 1000 and len(match_data) < 1):
         time.sleep(1)
 
     print('Beginning analysis.')
@@ -66,6 +73,7 @@ try:
         sell_length = len(sell_data)
         sell_length_index = sell_length - 1
         match_length = len(match_data)
+        match_length_index = match_length - 1
         
         """
         if match_length == 0:
@@ -109,12 +117,19 @@ try:
         sell_volrateflow = (60.0 * sell_avg) / time_elapsed_sell
         buysell_differential = buy_volrateflow - sell_volrateflow
         match_volrateflow = (60.0 * match_avg) / time_elapsed_match
+        match_rate = (60.0 * float(match_length)) / time_elapsed_match
+
+        with open('volrateflow_log.csv', 'a', newline='') as csvfile:
+            csv_writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            csv_writer.writerow([iso_time, "{:.2f}".format(buy_volrateflow), "{:.2f}".format(sell_volrateflow), "{:.2f}".format(buysell_differential),
+                                 "{:.2f}".format(match_volrateflow), "{:.2f}".format(match_rate)])
 
         print('VOLUME RATE FLOW')
         print('Buy:          ' + str(buy_volrateflow) + ' $/min')
         print('Sell:         ' + str(sell_volrateflow) + ' $/min')
         print('Differential: ' + str(buysell_differential) + ' $/min')
         print('Match:        ' + str(match_volrateflow) + ' $/min')
+        print('Match Rate:   ' + str(match_rate) + ' matches/min')
         print('----------------------------------------')
         print()
         

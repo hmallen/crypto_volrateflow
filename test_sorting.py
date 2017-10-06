@@ -3,9 +3,12 @@ from collections import deque
 import gdax
 import time
 
-buy_data = deque(maxlen=1000)
-sell_data = deque(maxlen=1000)
-match_data = deque(maxlen=100)
+data_length = 1000
+data_length_match = data_length / 10
+
+buy_data = deque(maxlen=data_length)
+sell_data = deque(maxlen=data_length)
+match_data = deque(maxlen=data_length_match)
 
 
 class myWebsocketClient(gdax.WebsocketClient):

@@ -37,6 +37,9 @@ buy_data = deque(maxlen=data_length)
 sell_data = deque(maxlen=data_length)
 match_data = deque(maxlen=data_length_match)
 
+log_datetime = datetime.datetime.now()
+log_file = product + '--' + log_datetime + '--' + 'volrateflow_log.csv'
+
 
 class myWebsocketClient(gdax.WebsocketClient):
     def on_open(self):
@@ -150,7 +153,6 @@ while (True):
     print('sell_avg:  ' + str(sell_avg))
     print('match_avg: ' + str(match_avg))
     print()
-    print('time_elapsed_match: ' + str(time_elapsed_match))
     print('time_elapsed_buy:   ' + str(time_elapsed_buy))
     print('time_elapsed_sell:  ' + str(time_elapsed_sell))
     print('time_elapsed_match: ' + str(time_elapsed_match))
@@ -169,7 +171,7 @@ while (True):
     print('----------------------------------------')
     print()
 
-    with open('volrateflow_log.csv', 'a', newline='') as csvfile:
+    with open(log_file, 'a', newline='') as csvfile:
         csv_writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         csv_writer.writerow([datetime.datetime.now(), "{:.2f}".format(buy_volrateflow), "{:.2f}".format(sell_volrateflow), "{:.2f}".format(buysell_differential),
                              "{:.2f}".format(match_volrateflow), "{:.2f}".format(match_rate), "{:.2f}".format(high_bid), "{:.2f}".format(high_bid_vol), "{:.2f}".format(high_bid_amt),

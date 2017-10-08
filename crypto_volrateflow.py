@@ -37,9 +37,11 @@ buy_data = deque(maxlen=data_length)
 sell_data = deque(maxlen=data_length)
 match_data = deque(maxlen=data_length_match)
 
-#log_datetime = datetime.datetime.now()
-#log_file = product + '--' + str(log_datetime) + '--' + 'volrateflow_log.csv'
-log_file = 'logs/' + product + '--' + 'volrateflow_log.csv'
+log_datetime_raw = datetime.datetime.now()
+log_datetime = log_datetime_raw.strftime('%m%d%Y-%H%M%S')
+log_file = 'logs/' + product + '--' + log_datetime + '--volrateflow_log.csv'
+#log_file = product + '--' + "{:.2f}".format(log_datetime) + '--' + 'volrateflow_log.csv'
+#log_file = 'logs/' + product + '--' + 'volrateflow_log.csv'
 
 
 class myWebsocketClient(gdax.WebsocketClient):
@@ -144,32 +146,36 @@ while (True):
     day_volume = float(product_ticker['volume'])
 
     print('----------------------------------------')
-    print('buy_length:   ' + str(buy_length))
-    print('sell_length:  ' + str(sell_length))
-    print('match_length: ' + str(match_length))
+    print('buy_length:   ' + "{:}".format(buy_length))
+    print('sell_length:  ' + "{:}".format(sell_length))
+    print('match_length: ' + "{:}".format(match_length))
     print()
-    print('buy_avg:   ' + str(buy_avg))
-    print('sell_avg:  ' + str(sell_avg))
-    print('match_avg: ' + str(match_avg))
+    print('buy_avg:    $' + "{:.2f}".format(buy_avg))
+    print('sell_avg:   $' + "{:.2f}".format(sell_avg))
+    if match_avg < 0:
+        match_avg_print = abs(match_avg)
+        print('match_avg: -$' + "{:.2f}".format(match_avg_print))
+    elif match_avg >= 0:
+        print('match_avg:  $' + "{:.2f}".format(match_avg))
     print()
     """
-    print('time_elapsed_buy:   ' + str(time_elapsed_buy))
-    print('time_elapsed_sell:  ' + str(time_elapsed_sell))
-    print('time_elapsed_match: ' + str(time_elapsed_match))
+    print('time_elapsed_buy:   ' + "{:.2f}".format(time_elapsed_buy))
+    print('time_elapsed_sell:  ' + "{:.2f}".format(time_elapsed_sell))
+    print('time_elapsed_match: ' + "{:.2f}".format(time_elapsed_match))
     print()
     """
     print('VOLUME RATE FLOW')
-    print('Buy:          ' + str(buy_volrateflow) + ' $/min')
-    print('Sell:         ' + str(sell_volrateflow) + ' $/min')
-    print('Differential: ' + str(buysell_differential) + ' $/min')
-    print('Match:        ' + str(match_volrateflow) + ' $/min')
-    print('Match Rate:   ' + str(match_rate) + ' matches/min')
+    print('Buy:          $' + "{:.2f}".format(buy_volrateflow) + ' /min')
+    print('Sell:         $' + "{:.2f}".format(sell_volrateflow) + ' /min')
+    print('Differential: $' + "{:.2f}".format(buysell_differential) + ' /min')
+    print('Match:        $' + "{:.2f}".format(match_volrateflow) + ' /min')
+    print('Match Rate:   $' + "{:.2f}".format(match_rate) + ' matches/min')
     print()
     print('MARKET')
-    print('High Bid:     ' + str(high_bid) + ' / Total: ' + '$' + str(high_bid_amt))
-    print('Low Ask:      ' + str(low_ask) + ' / Total: ' + '$' + str(low_ask_amt))
-    print('Spread:       ' + '$' + str(spread))
-    print('Market Price: ' + str(market_price) + ' / 24hr Volume: ' + str(day_volume))
+    print('High Bid:     $' + "{:.2f}".format(high_bid) + ' / Total: ' + '$' + "{:.2f}".format(high_bid_amt))
+    print('Low Ask:      $' + "{:.2f}".format(low_ask) + ' / Total: ' + '$' + "{:.2f}".format(low_ask_amt))
+    print('Spread:       $' + "{:.2f}".format(spread))
+    print('Market Price: $' + "{:.2f}".format(market_price) + ' / 24hr Volume: ' + "{:.2f}".format(day_volume))
     print('----------------------------------------')
     print()
 
@@ -177,7 +183,7 @@ while (True):
         csv_writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         csv_writer.writerow([datetime.datetime.now(), "{:.2f}".format(buy_volrateflow), "{:.2f}".format(sell_volrateflow), "{:.2f}".format(buysell_differential),
                              "{:.2f}".format(match_volrateflow), "{:.2f}".format(match_rate), "{:.2f}".format(high_bid), "{:.2f}".format(high_bid_vol), "{:.2f}".format(high_bid_amt),
-                             "{:.2f}".format(low_ask), "{:.2f}".format(low_ask_vol), "{:.2f}".format(low_ask_amt), "{:.2f}".format(market_price), "{:.2f}".format(day_volume)])
+                             "{:.2f}".format(low_ask), "{:.2f}".format(low_ask_vol), "{:.2f}".format(low_ask_amt), "{:.2f}".format(spread), "{:.2f}".format(market_price), "{:.2f}".format(day_volume)])
     
     time.sleep(10)
 

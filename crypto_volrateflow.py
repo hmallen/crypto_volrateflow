@@ -39,7 +39,7 @@ match_data = deque(maxlen=data_length_match)
 
 #log_datetime = datetime.datetime.now()
 #log_file = product + '--' + str(log_datetime) + '--' + 'volrateflow_log.csv'
-log_file = product + '--' + 'volrateflow_log.csv'
+log_file = 'logs/' + product + '--' + 'volrateflow_log.csv'
 
 
 class myWebsocketClient(gdax.WebsocketClient):
@@ -56,7 +56,7 @@ class myWebsocketClient(gdax.WebsocketClient):
             msg_side = msg["side"]
             
             if msg_type == 'received':
-                order_tot = float(msg["size"]) * float(msg["price"])
+                order_tot = float(msg["size"]) * float(msg["price"])    # First calculation
                 if msg_side == 'buy':
                     buy_data.append((msg_time, order_tot))
                 elif msg_side == 'sell':
@@ -147,18 +147,17 @@ while (True):
     print('buy_length:   ' + str(buy_length))
     print('sell_length:  ' + str(sell_length))
     print('match_length: ' + str(match_length))
-    print('match_avg:    ' + str(match_avg))
-    print('match_tot:    ' + str(match_tot))
-    print('match_length: ' + str(match_length))
     print()
     print('buy_avg:   ' + str(buy_avg))
     print('sell_avg:  ' + str(sell_avg))
     print('match_avg: ' + str(match_avg))
     print()
+    """
     print('time_elapsed_buy:   ' + str(time_elapsed_buy))
     print('time_elapsed_sell:  ' + str(time_elapsed_sell))
     print('time_elapsed_match: ' + str(time_elapsed_match))
     print()
+    """
     print('VOLUME RATE FLOW')
     print('Buy:          ' + str(buy_volrateflow) + ' $/min')
     print('Sell:         ' + str(sell_volrateflow) + ' $/min')

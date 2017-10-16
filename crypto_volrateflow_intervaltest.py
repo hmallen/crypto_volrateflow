@@ -144,7 +144,7 @@ def display_data(): # NEED TO UPDATE WITH NEW VARIABLES
     
     print('MARKET')
     print('High Bid:          $' + "{:.2f}".format(high_bid) + ' - ' + "{:.2f}".format(high_bid_vol) + ' - ' + '$' + "{:.2f}".format(high_bid_amt))
-    print('Low Ask:           $' + "{:.2f}".format(low_ask) + ' - ' + "{:2f}".format(low_ask_vol) + ' - ' + '$' + "{:.2f}".format(low_ask_amt))
+    print('Low Ask:           $' + "{:.2f}".format(low_ask) + ' - ' + "{:.2f}".format(low_ask_vol) + ' - ' + '$' + "{:.2f}".format(low_ask_amt))
     print('Spread:            $' + "{:.2f}".format(spread))
     print('Market Price:      $' + "{:.2f}".format(market_price) + ' - 24hr Volume: ' + "{:.2f}".format(day_volume))
     print('----------------------------------------')

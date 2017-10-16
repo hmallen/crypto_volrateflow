@@ -1,6 +1,7 @@
 #!/usr/env python3
 # TO DO:
 # - Limit deque length to selected time frame
+# - Buy/Sell amt. difference at inner point of spread (volume?)
 
 import csv
 import datetime
@@ -30,8 +31,11 @@ else:
     sys.exit(0)
 print()
 
-data_length = 1000
-data_length_match = 100
+logging_threshold = 1000  # NEED TO INCREASE?
+logging_threshold_match = 100  # NEED TO INCREASE?
+
+data_length = 1000  # NEED TO INCREASE?
+data_length_match = 100  # NEED TO INCREASE?
 
 buy_data = deque(maxlen=data_length)
 sell_data = deque(maxlen=data_length)
@@ -39,7 +43,7 @@ match_data = deque(maxlen=data_length_match)
 
 log_datetime_raw = datetime.datetime.now()
 log_datetime = log_datetime_raw.strftime('%m%d%Y-%H%M%S')
-log_file = 'logs/' + product + '--' + log_datetime + '--volrateflow_log.csv'
+log_file = 'logs/' + log_datetime + product + '--' + log_datetime + '--volrateflow_log.csv'
 #log_file = product + '--' + "{:.2f}".format(log_datetime) + '--' + 'volrateflow_log.csv'
 #log_file = 'logs/' + product + '--' + 'volrateflow_log.csv'
 
@@ -89,6 +93,8 @@ wsClient.start()
 
 print(wsClient.url, wsClient.products)
 
+log_active = False
+
 print('Accumulating market data. Please wait...')
 while (wsClient.message_count < 1000):
     time.sleep(1)
@@ -111,25 +117,25 @@ while (True):
     buy_tot = 0.0
     sell_tot = 0.0
     match_tot = 0.0
-    for x in range(0, buy_length_index):
+    for x in range(0, buy_length):
         buy_tot = buy_tot + float(buy_data[x][1])
     buy_avg = buy_tot / buy_length
-    for x in range(0, sell_length_index):
+    for x in range(0, sell_length):
         sell_tot = sell_tot + float(sell_data[x][1])
     sell_avg = sell_tot / sell_length
-    for x in range(0, match_length_index):
+    for x in range(0, match_length):
         match_tot = match_tot + float(match_data[x][1])
     match_avg = match_tot / match_length
     
-    time_elapsed_buy = float((buy_data[buy_length_index][0] - buy_data[0][0]).total_seconds())
-    time_elapsed_sell = float((sell_data[sell_length_index][0] - sell_data[0][0]).total_seconds())
-    time_elapsed_match = float((match_data[match_length_index][0] - match_data[0][0]).total_seconds())
+    time_elapsed_buylist = float((buy_data[buy_length_index][0] - buy_data[0][0]).total_seconds())
+    time_elapsed_selllist = float((sell_data[sell_length_index][0] - sell_data[0][0]).total_seconds())
+    time_elapsed_matchlist = float((match_data[match_length_index][0] - match_data[0][0]).total_seconds())
 
-    buy_volrateflow = (60.0 * buy_avg) / time_elapsed_buy
-    sell_volrateflow = (60.0 * sell_avg) / time_elapsed_sell
+    buy_volrateflow = (60.0 * buy_avg) / time_elapsed_buylist
+    sell_volrateflow = (60.0 * sell_avg) / time_elapsed_selllist
     buysell_differential = buy_volrateflow - sell_volrateflow
-    match_volrateflow = (60.0 * match_avg) / time_elapsed_match
-    match_rate = (60.0 * float(match_length)) / time_elapsed_match
+    match_volrateflow = (60.0 * match_avg) / time_elapsed_matchlist
+    match_rate = (60.0 * float(match_length)) / time_elapsed_matchlist
 
     product_book = public_client.get_product_order_book(product, level=1)
     product_ticker = public_client.get_product_ticker(product_id=product)
@@ -146,44 +152,68 @@ while (True):
     day_volume = float(product_ticker['volume'])
 
     print('----------------------------------------')
-    print('buy_length:   ' + "{:}".format(buy_length))
-    print('sell_length:  ' + "{:}".format(sell_length))
-    print('match_length: ' + "{:}".format(match_length))
+    print('buy_length:        ' + "{:}".format(buy_length))
+    print('sell_length:       ' + "{:}".format(sell_length))
+    print('match_length:      ' + "{:}".format(match_length))
     print()
-    print('buy_avg:    $' + "{:.2f}".format(buy_avg))
-    print('sell_avg:   $' + "{:.2f}".format(sell_avg))
+    print('buy_avg:           $' + "{:.2f}".format(buy_avg))
+    print('sell_avg:          $' + "{:.2f}".format(sell_avg))
     if match_avg < 0:
         match_avg_print = abs(match_avg)
-        print('match_avg: -$' + "{:.2f}".format(match_avg_print))
+        print('match_avg:        -($' + "{:.2f}".format(match_avg_print) + ')')
     elif match_avg >= 0:
-        print('match_avg:  $' + "{:.2f}".format(match_avg))
+        print('match_avg:         $' + "{:.2f}".format(match_avg))
     print()
-    """
-    print('time_elapsed_buy:   ' + "{:.2f}".format(time_elapsed_buy))
-    print('time_elapsed_sell:  ' + "{:.2f}".format(time_elapsed_sell))
-    print('time_elapsed_match: ' + "{:.2f}".format(time_elapsed_match))
+    
+    print('Time (Buy):   ' + "{:.2f}".format(time_elapsed_buylist))
+    print('Time (Sell):  ' + "{:.2f}".format(time_elapsed_selllist))
+    print('Time (Match): ' + "{:.2f}".format(time_elapsed_matchlist))
     print()
-    """
+    
     print('VOLUME RATE FLOW')
-    print('Buy:          $' + "{:.2f}".format(buy_volrateflow) + ' /min')
-    print('Sell:         $' + "{:.2f}".format(sell_volrateflow) + ' /min')
-    print('Differential: $' + "{:.2f}".format(buysell_differential) + ' /min')
-    print('Match:        $' + "{:.2f}".format(match_volrateflow) + ' /min')
-    print('Match Rate:   $' + "{:.2f}".format(match_rate) + ' matches/min')
+    print('Buy:               $' + "{:.2f}".format(buy_volrateflow) + ' /min')
+    print('Sell:              $' + "{:.2f}".format(sell_volrateflow) + ' /min')
+    if buysell_differential < 0:
+        buysell_differential_print = abs(buysell_differential)
+        print('Differential:     -($' + "{:.2f}".format(buysell_differential_print) + ') /min')
+    elif buysell_differential >= 0:
+        print('Differential:      $' + "{:.2f}".format(buysell_differential) + ' /min')
+    if match_volrateflow < 0:
+        match_volrateflow_print = abs(match_volrateflow)
+        print('Match:            -($' + "{:.2f}".format(match_volrateflow_print) + ') /min')
+    elif match_volrateflow >= 0:
+        print('Match:             $' + "{:.2f}".format(match_volrateflow) + ' /min')
+    print('Match Rate:        $' + "{:.2f}".format(match_rate) + ' matches/min')
     print()
+    
     print('MARKET')
-    print('High Bid:     $' + "{:.2f}".format(high_bid) + ' / Total: ' + '$' + "{:.2f}".format(high_bid_amt))
-    print('Low Ask:      $' + "{:.2f}".format(low_ask) + ' / Total: ' + '$' + "{:.2f}".format(low_ask_amt))
-    print('Spread:       $' + "{:.2f}".format(spread))
-    print('Market Price: $' + "{:.2f}".format(market_price) + ' / 24hr Volume: ' + "{:.2f}".format(day_volume))
+    print('High Bid:           $' + "{:.2f}".format(high_bid) + ' / Total: ' + '$' + "{:.2f}".format(high_bid_amt))
+    print('Low Ask:            $' + "{:.2f}".format(low_ask) + ' / Total: ' + '$' + "{:.2f}".format(low_ask_amt))
+    print('Spread:             $' + "{:.2f}".format(spread))
+    print('Market Price:       $' + "{:.2f}".format(market_price) + ' / 24hr Volume: ' + "{:.2f}".format(day_volume))
     print('----------------------------------------')
     print()
 
-    with open(log_file, 'a', newline='') as csvfile:
-        csv_writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        csv_writer.writerow([datetime.datetime.now(), "{:.2f}".format(buy_volrateflow), "{:.2f}".format(sell_volrateflow), "{:.2f}".format(buysell_differential),
-                             "{:.2f}".format(match_volrateflow), "{:.2f}".format(match_rate), "{:.2f}".format(high_bid), "{:.2f}".format(high_bid_vol), "{:.2f}".format(high_bid_amt),
-                             "{:.2f}".format(low_ask), "{:.2f}".format(low_ask_vol), "{:.2f}".format(low_ask_amt), "{:.2f}".format(spread), "{:.2f}".format(market_price), "{:.2f}".format(day_volume)])
+    if log_active == False:
+        if buy_length >= logging_threshold and sell_length >= logging_threshold and match_length >= logging_threshold_match:
+            log_active = True
+            print('Logging activated.')
+            print()
+
+    """
+    Logging:
+    1-Date/Time, 2-Buy VRF, 3-Sell VRF,
+    4-Buy/Sell Differential, 5-Match VRF, 6-Match Rate,
+    7-High Bid, 8-High Bid Volume, 9-High Bid Amount,
+    10-Low Ask, 11-Low Ask Volume, 12-Low Ask Amount,
+    13-Spread, 14-Market Price, 15-24hr Volume
+    """
+    if log_active == True:
+        with open(log_file, 'a', newline='') as csvfile:
+            csv_writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            csv_writer.writerow([datetime.datetime.now(), "{:.2f}".format(buy_volrateflow), "{:.2f}".format(sell_volrateflow), "{:.2f}".format(buysell_differential),
+                                 "{:.2f}".format(match_volrateflow), "{:.2f}".format(match_rate), "{:.2f}".format(high_bid), "{:.2f}".format(high_bid_vol), "{:.2f}".format(high_bid_amt),
+                                 "{:.2f}".format(low_ask), "{:.2f}".format(low_ask_vol), "{:.2f}".format(low_ask_amt), "{:.2f}".format(spread), "{:.2f}".format(market_price), "{:.2f}".format(day_volume)])
     
     time.sleep(10)
 

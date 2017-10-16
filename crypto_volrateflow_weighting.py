@@ -1,11 +1,7 @@
 #!/usr/env python3
 
 # TO DO:
-# - Confirm units displayed
-# - Fix units in display_data()
 # - Log multiple time intervals (multiple files) for testing
-# - Add bid/ask volume to market data output
-# - Switch length and time checks in logging activation (OR REMOVE LENGTH CHECK?)
 # - Add buy rate/sell rate (RELATIVE TO 24HR VOLUME?)
 # - Plot long interval vs. short interval and look for crossover?
 
@@ -13,6 +9,7 @@ import csv
 import datetime
 from collections import deque
 import gdax
+import os
 import sys
 import time
 
@@ -37,22 +34,35 @@ else:
     sys.exit(0)
 print()
 
-print('Please input desired backtesting time.')
-user_interval_raw = input('Interval (min): ')
+# Setup timedelta for short backtesting interval
+print('Please input desired backtesting time. (SHORT Duration)')
+user_interval_short_raw = input('Interval (min): ')
 try:
-    user_interval = int(user_interval_raw)
-    delta_interval = datetime.timedelta(minutes=user_interval)
+    user_interval_short = int(user_interval_short_raw)
+    delta_interval_short = datetime.timedelta(minutes=user_interval_short)
     time_start = datetime.datetime.now()
-    if user_interval == 1:
-        print('Using backtesting interval of 1 minute.')
+    if user_interval_short == 1:
+        print('Using short backtesting interval of 1 minute.')
     else:
-        print('Using backtesting interval of ' + str(user_interval) + ' minutes.')
+        print('Using short backtesting interval of ' + "{}".format(user_interval_short) + ' minutes.')
+    print()
 except:
     print('Invalid input. Exiting.')
-print()
 
-logging_threshold = 2000  # NEED TO INCREASE?
-logging_threshold_match = 100  # NEED TO INCREASE?
+# Setup timedelta for long backtesting interval
+print('Please input desired backtesting time. (LONG Duration)')
+user_interval_long_raw = input('Interval (min): ')
+try:
+    user_interval_long = int(user_interval_long_raw)
+    delta_interval_long = datetime.timedelta(minutes=user_interval_long)
+    time_start = datetime.datetime.now()
+    if user_interval_long == 1:
+        print('Using short backtesting interval of 1 minute.')
+    else:
+        print('Using short backtesting interval of ' + "{}".format(user_interval_long) + ' minutes.')
+        print()
+except:
+    print('Invalid input. Exiting.')
 
 # MAKE RELATIVE TO USER INPUT????
 data_length = 20000  # NEED TO INCREASE?
@@ -62,11 +72,12 @@ buy_data = deque(maxlen=data_length)
 sell_data = deque(maxlen=data_length)
 match_data = deque(maxlen=data_length_match)
 
+if not os.path.exists('logs'):
+    os.makedirs('logs')
 log_datetime_raw = datetime.datetime.now()
 log_datetime = log_datetime_raw.strftime('%m%d%Y-%H%M%S')
-log_file = 'logs/' + log_datetime + product + '--' + log_datetime + '--volrateflow_log.csv'
-#log_file = product + '--' + "{:.2f}".format(log_datetime) + '--' + 'volrateflow_log.csv'
-#log_file = 'logs/' + product + '--' + 'volrateflow_log.csv'
+log_file_short = 'logs/' + log_datetime + product + '--' + log_datetime + '--volrateflow_log_SHORT.csv'
+log_file_long = 'logs/' + log_datetime + product + '--' + log_datetime + '--volrateflow_log_LONG.csv'
 
 
 class myWebsocketClient(gdax.WebsocketClient):
@@ -74,7 +85,9 @@ class myWebsocketClient(gdax.WebsocketClient):
         self.url = "wss://ws-feed.gdax.com/"
         self.products = [product]
         self.message_count = 0
-        self.deque_count = 0
+        self.buy_count = 0
+        self.sell_count = 0
+        self.match_count = 0
     def on_message(self, msg):
         self.message_count += 1
         if 'price' in msg and 'type' in msg:
@@ -88,24 +101,30 @@ class myWebsocketClient(gdax.WebsocketClient):
                 order_tot = order_size * order_price
                 if msg_side == 'buy':
                     buy_data.append((msg_time, order_tot, order_size, order_price))
+                    self.buy_count += 1
                 elif msg_side == 'sell':
                     sell_data.append((msg_time, order_tot, order_size, order_price))
+                    self.sell_count +=1
             elif msg_type == 'done' and msg["reason"] == 'cancelled':
                 order_size = float(msg["size"])
                 order_price = float(msg["price"])
                 order_tot = -1.0 * order_size * order_price
                 if msg_side == 'buy':
                     buy_data.append((msg_time, order_tot, order_size, order_price))
+                    self.buy_count += 1
                 elif msg_side == 'sell':
                     sell_data.append((msg_time, order_tot, order_size, order_price))
+                    self.sell_count += 1
             elif msg_type == 'match':
                 order_size = float(msg["size"])
                 order_price = float(msg["price"])
                 order_tot = order_size * order_price
                 if msg_side == 'buy':
                     match_data.append((msg_time, order_tot, order_size, order_price))
+                    self.match_count += 1
                 elif msg_side == 'sell':
                     match_data.append((msg_time, (-1.0 * order_tot), order_size, order_price))
+                    self.match_count += 1
             elif msg_type == 'change':
                 order_size = float(msg["size"])
                 order_price = float(msg["price"])
@@ -115,48 +134,51 @@ class myWebsocketClient(gdax.WebsocketClient):
         print('Closing websocket.')
 
 
-def display_data(): # NEED TO UPDATE WITH NEW VARIABLES
-    print('----------------------------------------')
-    print('Buy Length:        ' + "{:}".format(buy_length))
-    print('Sell Length:       ' + "{:}".format(sell_length))
-    print('Match Length:      ' + "{:}".format(match_length))
-    print()
-    print('Buy Average:       $' + "{:.2f}".format(buy_avg))
-    print('Sell Average:      $' + "{:.2f}".format(sell_avg))
-    if match_avg < 0:
-        match_avg_print = abs(match_avg)
-        print('Match Average:   -($' + "{:.2f}".format(match_avg_print) + ')')
-    elif match_avg >= 0:
-        print('Match Average:     $' + "{:.2f}".format(match_avg))
-    print()
+def display_data(debug): # NEED TO UPDATE WITH NEW VARIABLES
+    if debug == True:
+        print('----------------------------------------')
+        print('SHORT INTERVAL')
+        print('Buy Length:        ' + "{:}".format(buy_length))
+        print('Sell Length:       ' + "{:}".format(sell_length))
+        print('Match Length:      ' + "{:}".format(match_length))
+        print()
+        print('Buy Average:       $' + "{:.2f}".format(buy_avg))
+        print('Sell Average:      $' + "{:.2f}".format(sell_avg))
+        if match_avg < 0:
+            match_avg_print = abs(match_avg)
+            print('Match Average:   -($' + "{:.2f}".format(match_avg_print) + ')')
+        elif match_avg >= 0:
+            print('Match Average:     $' + "{:.2f}".format(match_avg))
+        # NEED WEIGHTED AVERAGES HERE
+        print()
+        
+        print('Buy Time:          ' + "{:.2f}".format(time_elapsed_buylist) + ' sec')
+        print('Sell Time:         ' + "{:.2f}".format(time_elapsed_selllist) + ' sec')
+        print('Match Time:        ' + "{:.2f}".format(time_elapsed_matchlist) + ' sec')
+        print()
+        
+        print('VOLUME RATE FLOW')
+        print('Buy:               $' + "{:.2f}".format(buy_volrateflow) + ' /min')
+        print('Sell:              $' + "{:.2f}".format(sell_volrateflow) + ' /min')
+        if buysell_differential < 0:
+            buysell_differential_print = abs(buysell_differential)
+            print('Differential:    -($' + "{:.2f}".format(buysell_differential_print) + ') /min')
+        elif buysell_differential >= 0:
+            print('Differential:      $' + "{:.2f}".format(buysell_differential) + ' /min')
+        if match_volrateflow < 0:
+            match_volrateflow_print = abs(match_volrateflow)
+            print('Match:           -($' + "{:.2f}".format(match_volrateflow_print) + ') /min')
+        elif match_volrateflow >= 0:
+            print('Match:             $' + "{:.2f}".format(match_volrateflow) + ' /min')
+        print('Match Rate:        ' + "{:.2f}".format(match_rate) + ' matches/min')
+        print()
     
-    print('Buy Time:          ' + "{:.2f}".format(time_elapsed_buylist) + ' sec')
-    print('Sell Time:         ' + "{:.2f}".format(time_elapsed_selllist) + ' sec')
-    print('Match Time:        ' + "{:.2f}".format(time_elapsed_matchlist) + ' sec')
-    print()
-    
-    print('VOLUME RATE FLOW')
-    print('Buy:               $' + "{:.2f}".format(buy_volrateflow) + ' /min')
-    print('Sell:              $' + "{:.2f}".format(sell_volrateflow) + ' /min')
-    if buysell_differential < 0:
-        buysell_differential_print = abs(buysell_differential)
-        print('Differential:    -($' + "{:.2f}".format(buysell_differential_print) + ') /min')
-    elif buysell_differential >= 0:
-        print('Differential:      $' + "{:.2f}".format(buysell_differential) + ' /min')
-    if match_volrateflow < 0:
-        match_volrateflow_print = abs(match_volrateflow)
-        print('Match:           -($' + "{:.2f}".format(match_volrateflow_print) + ') /min')
-    elif match_volrateflow >= 0:
-        print('Match:             $' + "{:.2f}".format(match_volrateflow) + ' /min')
-    print('Match Rate:        ' + "{:.2f}".format(match_rate) + ' matches/min')
-    print()
-    
-    print('MARKET')
-    print('Low Ask:           $' + "{:.2f}".format(low_ask) + ' - ' + "{:.2f}".format(low_ask_vol) + ' - ' + 'Total: $' + "{:.2f}".format(low_ask_amt))
-    print('High Bid:          $' + "{:.2f}".format(high_bid) + ' - ' + "{:.2f}".format(high_bid_vol) + ' - ' + 'Total: $' + "{:.2f}".format(high_bid_amt))
-    print('Market Price:      $' + "{:.2f}".format(market_price) + ' ($' + "{:.2f}".format(spread) + ') - 24hr Volume: ' + "{:.2f}".format(day_volume))
-    print('----------------------------------------')
-    print()
+        print('MARKET')
+        print('Low Ask:           $' + "{:.2f}".format(low_ask) + ' -- ' + "{:.2f}".format(low_ask_vol) + ' -- ' + 'Total: $' + "{:.2f}".format(low_ask_amt))
+        print('High Bid:          $' + "{:.2f}".format(high_bid) + ' -- ' + "{:.2f}".format(high_bid_vol) + ' -- ' + 'Total: $' + "{:.2f}".format(high_bid_amt))
+        print('Market Price:      $' + "{:.2f}".format(market_price) + ' -- ($' + "{:.2f}".format(spread) + ') -- 24hr Volume: ' + "{:.2f}".format(day_volume))
+        print('----------------------------------------')
+        print()
 
 
 public_client = gdax.PublicClient()
@@ -169,70 +191,90 @@ print(wsClient.url, wsClient.products)
 log_active = False
 
 print('Accumulating market data. Please wait...')
-while (wsClient.message_count < 1000):
-    time.sleep(1)
-print('Waiting for all data lists to populate. Please wait...')
 while (True):
-    buy_length = len(buy_data)
-    sell_length = len(sell_data)
-    match_length = len(match_data)
-    if buy_length > 0 and sell_length > 0 and match_length > 0:
+    if wsClient.buy_count > 10 and wsClient.sell_count > 10 and wsClient.match_count > 10:
+        print('Data lists populated. Beginning analysis.')
         break
-    time.sleep(1)
-print('Beginning analysis. Logging will start when backtesting interval reached.')
+
+print('Logging will start when backtesting interval reached.')
 print()
 
 while (True):
+    # Buy Variables
     buy_length = len(buy_data)
     buy_length_index = buy_length - 1
+    buy_data_short = deque(maxlen=data_length)
+    buy_data_selected_long = deque(maxlen=data_length)
+    time_end_buy_short = buy_data[buy_length_index][0] - delta_interval_short
+    time_end_buy_long = buy_data[buy_length_index][0] - delta_interval_long
+
+    # Sell Variables
     sell_length = len(sell_data)
     sell_length_index = sell_length - 1
+    sell_data_short = deque(maxlen=data_length)
+    sell_data_selected_long = deque(maxlen=data_length)
+    time_end_sell_short = sell_data[sell_length_index][0] - delta_interval_short
+    time_end_sell_long = sell_data[sell_length_index][0] - delta_interval_long
+
+    # Match Variables
+    match_data_short = deque(maxlen=data_length_match)
+    match_data_selected_long = deque(maxlen=data_length_match)
     match_length = len(match_data)
     match_length_index = match_length - 1
-    
-    if match_length == 0:
-        match_length_index = 0
-    else:
-        match_length_index = match_length - 1
+    time_end_match_short = match_data[match_length_index][0] - delta_interval_short
+    time_end_match_long = match_data[match_length_index][0] - delta_interval_long
 
+    buy_end_point = 0
     buy_tot = 0.0
-    sell_tot = 0.0
-    match_tot = 0.0
-
-    buy_data_selected = deque(maxlen=data_length)
-    sell_data_selected = deque(maxlen=data_length)
-    match_data_selected = deque(maxlen=data_length_match)
-    
-    # Parse data by time (truncate to backtesting interval)
-    time_end = buy_data[buy_length_index][0] - delta_interval
     for x in range(buy_length_index, 0, -1):
-        if buy_data[x][0] < time_end:
-            break
+        if buy_data[x][0] >= time_end_buy_short:
+            buy_data_short.append(buy_data[x])
+            buy_data_selected_long.append(buy_data[x])
+            buy_end_point = x
+        elif time_end_buy_short < buy_data[buy_end_point][0] <= time_end_buy_long:
+            buy_data_selected_long.append(buy_data[x])
         else:
-            buy_data_selected.append(buy_data[x])
+            break
     buy_selected_length = len(buy_data_selected)
     buy_selected_index = buy_selected_length - 1
+
+    sell_end_point = 0
+    sell_tot = 0.0
     for x in range(sell_length_index, 0, -1):
-        if sell_data[x][0] < time_end:
-            break
+        if sell_data[x][0] >= time_end_sell_short:
+            sell_data_short.append(sell_data[x])
+            sell_data_selected_long.append(sell_data[x])
+            sell_end_point = x
+        elif time_end_sell_short < sell_data[sell_end_point][0] <= time_end_sell_long:
+            sell_data_selected_long.append(sell_data[x])
         else:
-            sell_data_selected.append(sell_data[x])
+            break
     sell_selected_length = len(sell_data_selected)
     sell_selected_index = sell_selected_length - 1
+
+    match_end_point = 0
     for x in range(match_length_index, 0, -1):
-        if match_data[x][0] < time_end:
-            break
-        else:
+        if match_data[x][0] >= time_end_match_short:
+            match_data_short.append(match_data[x])
+            match_data_selected_long.appended(match_data[x])
+            match_end_point = x
+        elif time_end_match_short < match_data[match_end_point][0] <= time_end_match_long:
             match_data_selected.append(match_data[x])
     match_selected_length = len(match_data_selected)
     match_selected_index = match_selected_length - 1
-    
+
+    buy_tot = 0.0
     for x in range(0, buy_selected_length):
         buy_tot = buy_tot + float(buy_data_selected[x][1])
-    buy_avg = buy_tot / buy_selected_length
+    buy_avg_short = buy_tot / buy_selected_length
+    buy_avg_long = buy_tot / buy_selected_long
+
+    sell_tot = 0.0
     for x in range(0, sell_selected_length):
         sell_tot = sell_tot + float(sell_data_selected[x][1])
     sell_avg = sell_tot / sell_selected_length
+
+    match_tot = 0.0
     for x in range(0, match_selected_length):
         match_tot = match_tot + float(match_data_selected[x][1])
     match_avg = match_tot / match_selected_length
@@ -264,18 +306,16 @@ while (True):
     display_data()
 
     if log_active == False:
-        print('Waiting to achieve data point logging threshold.')
         # Wait until sufficient quantity of data points collected
-        if buy_length >= logging_threshold and sell_length >= logging_threshold and match_length >= logging_threshold_match:
-            print('Logging threshold achieved. Waiting for backtesting duration to elapse.')
-            # Wait to collect data for user selected duration before beginning
-            time_elapsed_buylist_min = time_elapsed_buylist / 60.0
-            time_elapsed_selllist_min = time_elapsed_selllist / 60.0
-            time_elapsed_matchlist_min = time_elapsed_matchlist / 60.0
-            #if datetime.datetime.now() >= (time_start + delta_interval):  # Wait for extra minute?
-            if time_elapsed_buylist_min >= float(user_interval) and time_elapsed_selllist_min >= float(user_interval) and time_elapsed_matchlist_min >= float(user_interval):
-                log_active = True
-                print('Backtesting interval duration reached. Logging activated.')
+        print('Waiting for sufficient data for backtesting.')
+        # Wait to collect data for user selected duration before beginning
+        time_elapsed_buylist_min = time_elapsed_buylist / 60.0
+        time_elapsed_selllist_min = time_elapsed_selllist / 60.0
+        time_elapsed_matchlist_min = time_elapsed_matchlist / 60.0
+        #if datetime.datetime.now() >= (time_start + delta_interval):  # Wait for extra minute?
+        if time_elapsed_buylist_min >= float(user_interval) and time_elapsed_selllist_min >= float(user_interval) and time_elapsed_matchlist_min >= float(user_interval):
+            log_active = True
+            print('Backtesting interval duration reached. Logging activated.')
         print()
     
     # Logging:

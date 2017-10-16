@@ -1,12 +1,13 @@
 #!/usr/env python3
+
 # TO DO:
-# - Limit deque length to selected time frame
-# - Buy/sell amt. difference at inner point of spread (volume?)
 # - Confirm units displayed
 # - Fix units in display_data()
-# - Delay to accumulate data for full delta interval
 # - Log multiple time intervals (multiple files) for testing
 # - Add bid/ask volume to market data output
+# - Switch length and time checks in logging activation (OR REMOVE LENGTH CHECK?)
+# - Add buy rate/sell rate (RELATIVE TO 24HR VOLUME?)
+# - Plot long interval vs. short interval and look for crossover?
 
 import csv
 import datetime
@@ -82,25 +83,33 @@ class myWebsocketClient(gdax.WebsocketClient):
             msg_side = msg["side"]
             
             if msg_type == 'received':
-                order_tot = float(msg["size"]) * float(msg["price"])    # First calculation
+                order_size = float(msg["size"])
+                order_price = float(msg["price"])
+                order_tot = order_size * order_price
                 if msg_side == 'buy':
-                    buy_data.append((msg_time, order_tot))
+                    buy_data.append((msg_time, order_tot, order_size, order_price))
                 elif msg_side == 'sell':
-                    sell_data.append((msg_time, order_tot))
+                    sell_data.append((msg_time, order_tot, order_size, order_price))
             elif msg_type == 'done' and msg["reason"] == 'cancelled':
-                order_tot = -1.0 * (float(msg["size"]) * float(msg["price"]))
+                order_size = float(msg["size"])
+                order_price = float(msg["price"])
+                order_tot = -1.0 * order_size * order_price
                 if msg_side == 'buy':
-                    buy_data.append((msg_time, order_tot))
+                    buy_data.append((msg_time, order_tot, order_size, order_price))
                 elif msg_side == 'sell':
-                    sell_data.append((msg_time, order_tot))
+                    sell_data.append((msg_time, order_tot, order_size, order_price))
             elif msg_type == 'match':
-                order_tot = float(msg["size"]) * float(msg["price"])
+                order_size = float(msg["size"])
+                order_price = float(msg["price"])
+                order_tot = order_size * order_price
                 if msg_side == 'buy':
-                    match_data.append((msg_time, order_tot))
+                    match_data.append((msg_time, order_tot, order_size, order_price))
                 elif msg_side == 'sell':
-                    match_data.append((msg_time, (-1.0 * order_tot)))
+                    match_data.append((msg_time, (-1.0 * order_tot), order_size, order_price))
             elif msg_type == 'change':
-                order_tot = float(msg["size"]) * float(msg["price"])
+                order_size = float(msg["size"])
+                order_price = float(msg["price"])
+                order_tot = order_size * order_price
                 print('---- CHANGE ----')
     def on_close(self):
         print('Closing websocket.')
@@ -108,22 +117,22 @@ class myWebsocketClient(gdax.WebsocketClient):
 
 def display_data(): # NEED TO UPDATE WITH NEW VARIABLES
     print('----------------------------------------')
-    print('buy_length:        ' + "{:}".format(buy_length))
-    print('sell_length:       ' + "{:}".format(sell_length))
-    print('match_length:      ' + "{:}".format(match_length))
+    print('Buy Length:        ' + "{:}".format(buy_length))
+    print('Sell Length:       ' + "{:}".format(sell_length))
+    print('Match Length:      ' + "{:}".format(match_length))
     print()
-    print('buy_avg:           $' + "{:.2f}".format(buy_avg))
-    print('sell_avg:          $' + "{:.2f}".format(sell_avg))
+    print('Buy Average:       $' + "{:.2f}".format(buy_avg))
+    print('Sell Average:      $' + "{:.2f}".format(sell_avg))
     if match_avg < 0:
         match_avg_print = abs(match_avg)
-        print('match_avg:       -($' + "{:.2f}".format(match_avg_print) + ')')
+        print('Match Average:   -($' + "{:.2f}".format(match_avg_print) + ')')
     elif match_avg >= 0:
-        print('match_avg:         $' + "{:.2f}".format(match_avg))
+        print('Match Average:     $' + "{:.2f}".format(match_avg))
     print()
     
-    print('Time (Buy):        ' + "{:.2f}".format(time_elapsed_buylist) + ' sec')
-    print('Time (Sell):       ' + "{:.2f}".format(time_elapsed_selllist) + ' sec')
-    print('Time (Match):      ' + "{:.2f}".format(time_elapsed_matchlist) + ' sec')
+    print('Buy Time:          ' + "{:.2f}".format(time_elapsed_buylist) + ' sec')
+    print('Sell Time:         ' + "{:.2f}".format(time_elapsed_selllist) + ' sec')
+    print('Match Time:        ' + "{:.2f}".format(time_elapsed_matchlist) + ' sec')
     print()
     
     print('VOLUME RATE FLOW')
@@ -143,10 +152,9 @@ def display_data(): # NEED TO UPDATE WITH NEW VARIABLES
     print()
     
     print('MARKET')
-    print('High Bid:          $' + "{:.2f}".format(high_bid) + ' - ' + "{:.2f}".format(high_bid_vol) + ' - ' + '$' + "{:.2f}".format(high_bid_amt))
-    print('Low Ask:           $' + "{:.2f}".format(low_ask) + ' - ' + "{:.2f}".format(low_ask_vol) + ' - ' + '$' + "{:.2f}".format(low_ask_amt))
-    print('Spread:            $' + "{:.2f}".format(spread))
-    print('Market Price:      $' + "{:.2f}".format(market_price) + ' - 24hr Volume: ' + "{:.2f}".format(day_volume))
+    print('Low Ask:           $' + "{:.2f}".format(low_ask) + ' - ' + "{:.2f}".format(low_ask_vol) + ' - ' + 'Total: $' + "{:.2f}".format(low_ask_amt))
+    print('High Bid:          $' + "{:.2f}".format(high_bid) + ' - ' + "{:.2f}".format(high_bid_vol) + ' - ' + 'Total: $' + "{:.2f}".format(high_bid_amt))
+    print('Market Price:      $' + "{:.2f}".format(market_price) + ' ($' + "{:.2f}".format(spread) + ') - 24hr Volume: ' + "{:.2f}".format(day_volume))
     print('----------------------------------------')
     print()
 

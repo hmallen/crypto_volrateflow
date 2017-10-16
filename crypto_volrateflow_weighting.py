@@ -4,6 +4,10 @@
 # - Log multiple time intervals (multiple files) for testing
 # - Add buy rate/sell rate (RELATIVE TO 24HR VOLUME?)
 # - Plot long interval vs. short interval and look for crossover?
+# - NEED TO FIX WHOLE SECTION STARTING ON LINE 272
+# - NEED TO SPLIT INTO MULTIPLE LOGS
+# - NEED TO MAKE WEIGHTED AVERAGES
+# - NEED TO ADD NEW AVERAGES TO DISPLAY_DATA()
 
 import csv
 import datetime
@@ -204,7 +208,7 @@ while (True):
     buy_length = len(buy_data)
     buy_length_index = buy_length - 1
     buy_data_short = deque(maxlen=data_length)
-    buy_data_selected_long = deque(maxlen=data_length)
+    buy_data_long = deque(maxlen=data_length)
     time_end_buy_short = buy_data[buy_length_index][0] - delta_interval_short
     time_end_buy_long = buy_data[buy_length_index][0] - delta_interval_long
 
@@ -212,13 +216,13 @@ while (True):
     sell_length = len(sell_data)
     sell_length_index = sell_length - 1
     sell_data_short = deque(maxlen=data_length)
-    sell_data_selected_long = deque(maxlen=data_length)
+    sell_data_long = deque(maxlen=data_length)
     time_end_sell_short = sell_data[sell_length_index][0] - delta_interval_short
     time_end_sell_long = sell_data[sell_length_index][0] - delta_interval_long
 
     # Match Variables
     match_data_short = deque(maxlen=data_length_match)
-    match_data_selected_long = deque(maxlen=data_length_match)
+    match_data_long = deque(maxlen=data_length_match)
     match_length = len(match_data)
     match_length_index = match_length - 1
     time_end_match_short = match_data[match_length_index][0] - delta_interval_short
@@ -229,56 +233,74 @@ while (True):
     for x in range(buy_length_index, 0, -1):
         if buy_data[x][0] >= time_end_buy_short:
             buy_data_short.append(buy_data[x])
-            buy_data_selected_long.append(buy_data[x])
+            buy_data_long.append(buy_data[x])
             buy_end_point = x
         elif time_end_buy_short < buy_data[buy_end_point][0] <= time_end_buy_long:
-            buy_data_selected_long.append(buy_data[x])
+            buy_data_long.append(buy_data[x])
         else:
             break
-    buy_selected_length = len(buy_data_selected)
-    buy_selected_index = buy_selected_length - 1
+    buy_selected_length_long = len(buy_data_selected_long)
+    buy_selected_index_long = buy_selected_length_long - 1
+    buy_selected_length_short = len(buy_data_selected_short)
+    buy_selected_index_short = buy_selected_length_short - 1
 
     sell_end_point = 0
     sell_tot = 0.0
     for x in range(sell_length_index, 0, -1):
         if sell_data[x][0] >= time_end_sell_short:
             sell_data_short.append(sell_data[x])
-            sell_data_selected_long.append(sell_data[x])
+            sell_data_long.append(sell_data[x])
             sell_end_point = x
         elif time_end_sell_short < sell_data[sell_end_point][0] <= time_end_sell_long:
-            sell_data_selected_long.append(sell_data[x])
+            sell_data_long.append(sell_data[x])
         else:
             break
-    sell_selected_length = len(sell_data_selected)
-    sell_selected_index = sell_selected_length - 1
+    sell_selected_length_long = len(sell_data_selected_long)
+    sell_selected_index_long = sell_selected_length_long - 1
+    sell_selected_length_short = len(sell_data_selected_short)
+    sell_selected_index_short = sell_selected_length_short - 1
 
     match_end_point = 0
     for x in range(match_length_index, 0, -1):
         if match_data[x][0] >= time_end_match_short:
             match_data_short.append(match_data[x])
-            match_data_selected_long.appended(match_data[x])
+            match_data_long.append(match_data[x])
             match_end_point = x
         elif time_end_match_short < match_data[match_end_point][0] <= time_end_match_long:
-            match_data_selected.append(match_data[x])
-    match_selected_length = len(match_data_selected)
-    match_selected_index = match_selected_length - 1
+            match_data_long.append(match_data[x])
+    match_selected_length_long = len(match_data_selected_long)
+    match_selected_index_long = match_selected_length_long - 1
+    match_selected_length_short = len(match_data_selected_short)
+    match_selected_index_short = match_selected_length_short - 1
 
     buy_tot = 0.0
-    for x in range(0, buy_selected_length):
-        buy_tot = buy_tot + float(buy_data_selected[x][1])
-    buy_avg_short = buy_tot / buy_selected_length
-    buy_avg_long = buy_tot / buy_selected_long
+    for x in range(0, buy_selected_length_short):
+        buy_tot = buy_tot + float(buy_data_short[x][1])
+    buy_avg_short = buy_tot / buy_selected_length_short
+    buy_tot = 0.0
+    for x in range(0, buy_selected_length_long):
+        buy_tot = buy_tot + float(buy_data_long[x][1])
+    buy_avg_long = buy_tot / buy_selected_length_long
 
     sell_tot = 0.0
-    for x in range(0, sell_selected_length):
-        sell_tot = sell_tot + float(sell_data_selected[x][1])
-    sell_avg = sell_tot / sell_selected_length
+    for x in range(0, sell_selected_length_short):
+        sell_tot = sell_tot + float(sell_data_short[x][1])
+    sell_avg_short = sell_tot / sell_selected_length_short
+    sell_tot = 0.0
+    for x in range(0, sell_selected_length_long):
+        sell_tot = sell_tot + float(sell_data_long[x][1])
+    sell_avg_long = sell_tot / sell_selected_length_long
 
     match_tot = 0.0
-    for x in range(0, match_selected_length):
-        match_tot = match_tot + float(match_data_selected[x][1])
-    match_avg = match_tot / match_selected_length
-    
+    for x in range(0, match_selected_length_short):
+        match_tot = match_tot + float(match_data_short[x][1])
+    match_avg_short = match_tot / match_selected_length_short
+    match_tot = 0.0
+    for x in range(0, match_selected_length_long):
+        match_tot = match_tot + float(match_data_long[x][1])
+    match_avg_long = match_tot / match_selected_length_long
+    #FIX THINGS BELOW
+    """
     time_elapsed_buylist = float((buy_data[buy_length_index][0] - buy_data[0][0]).total_seconds())
     time_elapsed_selllist = float((sell_data[sell_length_index][0] - sell_data[0][0]).total_seconds())
     time_elapsed_matchlist = float((match_data[match_length_index][0] - match_data[0][0]).total_seconds())
@@ -340,7 +362,7 @@ while (True):
                                  "{}".format(match_length), "{}".format(match_selected_length), "{:.2f}".format(time_elapsed_matchlist)])
     
     time.sleep(10)
-
+    """
 """   
 finally:
     wsClient.close()

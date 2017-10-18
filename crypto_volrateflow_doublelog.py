@@ -8,6 +8,7 @@
 # - NEED TO SPLIT INTO MULTIPLE LOGS
 # - NEED TO MAKE WEIGHTED AVERAGES
 # - NEED TO ADD NEW AVERAGES TO DISPLAY_DATA()
+# - Remove formatting from csv write (full float precision)
 
 import csv
 import datetime
@@ -299,17 +300,22 @@ while (True):
     for x in range(0, match_selected_length_long):
         match_tot = match_tot + float(match_data_long[x][1])
     match_avg_long = match_tot / match_selected_length_long
-    #FIX THINGS BELOW
-    """
+
     time_elapsed_buylist = float((buy_data[buy_length_index][0] - buy_data[0][0]).total_seconds())
     time_elapsed_selllist = float((sell_data[sell_length_index][0] - sell_data[0][0]).total_seconds())
     time_elapsed_matchlist = float((match_data[match_length_index][0] - match_data[0][0]).total_seconds())
 
-    buy_volrateflow = (60.0 * buy_avg) / time_elapsed_buylist
-    sell_volrateflow = (60.0 * sell_avg) / time_elapsed_selllist
-    buysell_differential = buy_volrateflow - sell_volrateflow
-    match_volrateflow = (60.0 * match_avg) / time_elapsed_matchlist
-    match_rate = (60.0 * float(match_length)) / time_elapsed_matchlist
+    # THIS WAS TOTALLY WRONG IN PREVIOUS VERSIONS. SHOULDN'T HAVE DIVIDED BY TIME FOR UNTRUNCATED BUY LIST.
+    buy_volrateflow_short = (60.0 * buy_avg_short) / float(user_interval_short)
+    buy_volrateflow_long = (60.0 * buy_avg_long) / float(user_interval_long)
+    sell_volrateflow_short = (60.0 * sell_avg_short) / float(user_interval_short)
+    sell_volrateflow_long = (60.0 * sell_avg_long) / float(user_interval_long)
+    buysell_differential_short = buy_volrateflow_short - sell_volrateflow_short
+    buysell_differential_long = buy_volrateflow_long - sell_volrateflow_long
+    match_volrateflow_short = (60.0 * match_avg_short) / float(user_interval_short)
+    match_volrateflow_long = (60.0 * match_avg_long) / float(user_interval_long)
+    match_rate_short = (60.0 * float(match_length_short)) / float(time_elapsed_matchlist)
+    match_rate_long = (60.0 * float(match_length_long)) / float(time_elapsed_matchlist)
 
     product_book = public_client.get_product_order_book(product, level=1)
     product_ticker = public_client.get_product_ticker(product_id=product)
@@ -362,7 +368,7 @@ while (True):
                                  "{}".format(match_length), "{}".format(match_selected_length), "{:.2f}".format(time_elapsed_matchlist)])
     
     time.sleep(10)
-    """
+    
 """   
 finally:
     wsClient.close()

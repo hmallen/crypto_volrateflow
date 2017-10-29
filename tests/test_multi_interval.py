@@ -38,6 +38,7 @@ else:
     sys.exit()
 print()
 
+# NEW CODE NEEDED
 print('Please input desired backtesting time.')
 user_interval_raw = input('Interval (min): ')
 try:
@@ -58,12 +59,13 @@ logging_threshold_match = 100  # NEED TO INCREASE?
 
 # MAKE RELATIVE TO USER INPUT????
 data_length = 20000  # NEED TO INCREASE?
-data_length_match = 1000  # NEED TO INCREASE?
+data_length_match = data_length / 20  # NEED TO INCREASE?
 
 buy_data = deque(maxlen=data_length)
 sell_data = deque(maxlen=data_length)
 match_data = deque(maxlen=data_length_match)
 
+# NEW CODE NEEDED
 log_datetime_raw = datetime.datetime.now()
 log_datetime = log_datetime_raw.strftime('%m%d%Y-%H%M%S')
 log_file = 'logs/' + log_datetime + '--' + product + '--volrateflow_log.csv'
@@ -114,7 +116,7 @@ class myWebsocketClient(gdax.WebsocketClient):
     def on_close(self):
         print('Closing websocket.')
 
-
+# NEW CODE NEEDED
 def display_data(): # NEED TO UPDATE WITH NEW VARIABLES
     print('----------------------------------------')
     print('Buy Length:        ' + "{:}".format(buy_length))
@@ -183,17 +185,21 @@ print('Beginning analysis. Logging will start when backtesting interval reached.
 print()
 
 while (True):
+    # NEED TO PLACE EVERYTHING IN A FOR LOOP
     buy_length = len(buy_data)
     buy_length_index = buy_length - 1
     sell_length = len(sell_data)
     sell_length_index = sell_length - 1
     match_length = len(match_data)
     match_length_index = match_length - 1
-    
+
+"""
+    # NEEDED?
     if match_length == 0:
         match_length_index = 0
     else:
         match_length_index = match_length - 1
+"""
 
     buy_tot = 0.0
     sell_tot = 0.0
@@ -202,7 +208,8 @@ while (True):
     buy_data_selected = deque(maxlen=data_length)
     sell_data_selected = deque(maxlen=data_length)
     match_data_selected = deque(maxlen=data_length_match)
-    
+
+    # NEED NEW CODE
     # Parse data by time (truncate to backtesting interval)
     time_end = buy_data[buy_length_index][0] - delta_interval
     for x in range(buy_length_index, 0, -1):
@@ -264,6 +271,7 @@ while (True):
 
     display_data()
 
+    # MOVE FIRST HALF TO TOP OF LOOP
     if log_active == False:
         print('Waiting to achieve data point logging threshold.')
         # Wait until sufficient quantity of data points collected
@@ -288,7 +296,9 @@ while (True):
     # 17-Buy Length, 18-Buy Selected Length, 19-Buy Length Time,
     # 20-Sell Length, 21-Sell Selected Length, 22-Sell Length Time,
     # 23-Match Length, 24-Match Selected Length, 25-Match Selected Time
-    if log_active == True:
+
+    # NEED NEW CODE
+    else:
         with open(log_file, 'a', newline='') as csvfile:
             csv_writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
             csv_writer.writerow([datetime.datetime.now(), "{}".format(user_interval), "{:.2f}".format(buy_volrateflow), "{:.2f}".format(sell_volrateflow),
@@ -302,8 +312,12 @@ while (True):
     
     time.sleep(10)
 
-"""   
+"""
+except KeyboardInterrupt:
+    print(Exiting.)
+
 finally:
     wsClient.close()
     print('Websocket closed.')
+    sys.exit()
 """

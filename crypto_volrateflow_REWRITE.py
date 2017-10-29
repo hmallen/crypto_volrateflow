@@ -186,7 +186,9 @@ while (True):
     market_price = float(product_ticker['price'])
     day_volume = float(product_ticker['volume'])
 
-    display_data('market')
+    if debug_mode == True:
+        print('----------------------------------------')
+        display_data('market')
 
     for x in range(0, len(backtest_intervals)):
         buy_length = len(buy_data)
@@ -226,27 +228,40 @@ while (True):
 
         # Perform calculations
         buy_tot = 0.0
+        buy_tot_weighted = 0.0
         sell_tot = 0.0
+        sell_tot_weighted = 0.0
         match_tot = 0.0
 
+        # CHECK FUNCTION WITHOUT FLOAT DECLARATION
         for y in range(0, buy_selected_length):
-            buy_tot += float(buy_data_selected[y][1])
+            buy_vol = buy_data_selected[y][1]
+            buy_price = buy_data_selected[y][2]
+            buy_tot += buy_vol
+            buy_tot_weighted += (1 - ((high_bid - buy_price) / high_bid)) * buy_vol
         buy_avg = buy_tot / float(buy_selected_length)
+        buy_avg_weighted = buy_tot_weighted / float(buy_selected_length)
         for y in range(0, sell_selected_length):
-            sell_tot += float(sell_data_selected[y][1])
+            sell_vol = sell_data_selected[y][1]
+            sell_price = sell_data_selected[y][2]
+            sell_tot += sell_vol
+            sell_tot_weighted += (1 - ((sell_price - low_ask) / low_ask)) * sell_vol
         sell_avg = sell_tot / float(sell_selected_length)
+        sell_avg_weighted = sell_tot_weighted / float(sell_selected_length)
         for y in range(0, match_selected_length):
-            match_tot += float(match_data_selected[y][1])
+            match_tot += match_data_selected[y][1]
         match_avg = match_tot / float(match_selected_length)
 
         buy_volrateflow = buy_avg / float(backtest_intervals[x])    # Buy volume per minute added to orderbook
         sell_volrateflow = sell_avg / float(backtest_intervals[x])  # Sell volume per minute added to orderbook
         match_volrateflow = match_avg / float(backtest_intervals[x])    # Match volume per minute
-        buysell_differential = buy_volrateflow - sell_volrateflow  # Buy/sell volume rate flow differential
         match_rate = float(match_selected_length) / float(backtest_intervals[x])    # Matches per minute
+        buysell_differential = buy_volrateflow - sell_volrateflow  # Buy/sell volume rate flow differential
 
         if debug_mode == True:
             display_data('calc')
+            print('----------------------------------------')
+            print()
 
         # Log to csv or check if logging should be enabled
         if log_active == True:
@@ -258,17 +273,19 @@ while (True):
                 # Wait to collect enough data for backtesting intervals before beginning logging
                 time_elapsed_buylist = float((buy_data[buy_length_index][0] - buy_data[0][0]).total_seconds())
                 time_elapsed_buylist_min = time_elapsed_buylist / 60.0
-                print('Buy Time:   ' + str(time_elapsed_buylist_min) + 'min')
                 time_elapsed_selllist = float((sell_data[sell_length_index][0] - sell_data[0][0]).total_seconds())
                 time_elapsed_selllist_min = time_elapsed_selllist / 60.0
-                print('Sell Time:  ' + str(time_elapsed_selllist_min) + 'min')
                 time_elapsed_matchlist = float((match_data[match_length_index][0] - match_data[0][0]).total_seconds())
                 time_elapsed_matchlist_min = time_elapsed_matchlist / 60.0
-                print('Match Time: ' + str(time_elapsed_matchlist_min) + 'min')
+                if debug_mode == True:
+                    print('Buy Time:   ' + str(time_elapsed_buylist_min) + 'min')
+                    print('Sell Time:  ' + str(time_elapsed_selllist_min) + 'min')
+                    print('Match Time: ' + str(time_elapsed_matchlist_min) + 'min')
                 if time_elapsed_buylist_min >= float(backtest_intervals[(len(backtest_intervals) - 1)]) and time_elapsed_selllist_min >= float(backtest_intervals[(len(backtest_intervals) - 1)]) and time_elapsed_matchlist_min >= float(backtest_intervals[(len(backtest_intervals) - 1)]):
                     log_active = True
                     print('Backtesting interval duration reached. Logging activated.')
-            else:
+                    
+            elif debug_mode == True:
                 print('buy_selected_length   = ' + str(buy_selected_length))
                 print('sell_selected_length  = ' + str(sell_selected_length))
                 print('match_selected_length = ' + str(match_selected_length))

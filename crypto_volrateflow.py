@@ -90,8 +90,10 @@ except:
     sys.exit(1)
 if debug_select == 1:
     debug_mode = True
+    print('Printing data to console.')
 elif debug_select == 2:
     debug_mode = False
+    print('Not printing data to console.')
 else:
     print('Invalid input. Exiting.')
     sys.exit(1)

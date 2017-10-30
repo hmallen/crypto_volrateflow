@@ -9,8 +9,6 @@ import os
 import sys
 import time
 
-debug_mode = True
-
 # Global constants
 logging_threshold = 1000
 logging_threshold_match = int(logging_threshold / 20)
@@ -79,6 +77,25 @@ for x in range(0, backtest_number):
 
 backtest_intervals.sort()
 delta_intervals.sort()
+
+# Debug mode selection
+print('Print data to console?')
+print('1 - Yes')
+print('2 - No')
+debug_select_raw = input('Selection: ')
+try:
+    debug_select = int(debug_select_raw)
+except:
+    print('Invalid input. Exiting.')
+    sys.exit(1)
+if debug_select == 1:
+    debug_mode = True
+elif debug_select == 2:
+    debug_mode = False
+else:
+    print('Invalid input. Exiting.')
+    sys.exit(1)
+print()
 
 dt_current = datetime.datetime.now().strftime('%m%d%Y-%H%M%S')
 

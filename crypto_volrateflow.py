@@ -97,7 +97,14 @@ for x in range(0, len(backtest_intervals)):
 for x in range(0, len(log_files)):
     with open(log_files[x], 'a', newline='') as csv_file:
         csv_writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        csv_writer.writerow(['Date/Time', ])
+        csv_writer.writerow(['Date/Time', 'Market Price', '24hr Volume',
+                             'High Bid', 'High Bid Vol.', 'Low Ask', 'Low Ask Vol.', 'Spread', 'Spread Vol. Diff.',
+                             'Buy Avg.', 'Buy Avg. Weighted', 'Buy Avg. Exp. Weighted',
+                             'Sell Avg.', 'Sell Avg. Weighted', 'Sell Avg. Exp. Weighted',
+                             'Buy VRF', 'Buy VRF Weighted', 'Buy VRF Exp. Weighted',
+                             'Sell VRF', 'Sell VRF Weighted', 'Sell VRF Exp. Weighted',
+                             'Buy/Sell Diff.', 'Buy/Sell Diff. Weighted', 'Buy/Sell Diff. Exp. Weighted',
+                             'Match Avg.', 'Match VRF', 'Match Rate (per min)'])
 
 
 class myWebsocketClient(gdax.WebsocketClient):
@@ -356,10 +363,14 @@ while (True):
 
         # Log to csv or check if logging should be enabled
         if log_active == True:
-            print()
             with open(log_files[x], 'a', newline='') as csv_file:
                 csv_writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-                csv_writer.writerow([datetime.datetime.now()])
+                csv_writer.writerow([datetime.datetime.now(), market_price, day_volume,
+                                     high_bid, high_bid_vol, low_ask, low_ask_vol, spread, spread_vol_differential,
+                                     buy_avg, buy_avg_weighted, buy_avg_weighted_exp,
+                                     sell_avg, sell_avg_weighted, sell_avg_weighted_exp,
+                                     buysell_differential, buysell_differential_weighted, buysell_differential_weighted_exp,
+                                     match_avg, match_volrateflow, match_rate])
 
     if log_active == False:
         if buy_length >= logging_threshold and sell_length >= logging_threshold and match_length >= logging_threshold_match:

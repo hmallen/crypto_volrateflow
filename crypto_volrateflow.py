@@ -45,8 +45,8 @@ elif user_product == '3':
     product = 'ETH-USD'
     print('ETH-USD market selected.')
 else:
-    print('Incorrect selection. Exiting')
-    sys.exit()
+    print('Invalid input. Exiting')
+    sys.exit(1)
 print()
 
 # Backtest intervals
@@ -56,7 +56,7 @@ try:
     backtest_number = int(backtest_number_raw)
 except:
     print('Invalid input. Exiting.')
-    sys.exit()
+    sys.exit(1)
 print()
 
 for x in range(0, backtest_number):
@@ -74,7 +74,7 @@ for x in range(0, backtest_number):
             print('Using backtesting interval of ' + str(user_interval) + ' minutes.')
     except:
         print('Invalid input. Exiting.')
-        sys.exit()
+        sys.exit(1)
     print()
 
 backtest_intervals.sort()
@@ -87,13 +87,13 @@ if not os.path.exists('logs'):
     os.makedirs('logs')
 else:
     print('Log directory found.')
-print()
 
 log_files = []   
 for x in range(0, len(backtest_intervals)):
     log_file = 'logs/' + dt_current + '--' + product + '--' + str(backtest_intervals[x]) + 'min--VRF.csv'
     log_files.append(log_file)
 
+print('Writing header to csv file.')
 for x in range(0, len(log_files)):
     with open(log_files[x], 'a', newline='') as csv_file:
         csv_writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
@@ -104,7 +104,8 @@ for x in range(0, len(log_files)):
                              'Buy VRF', 'Buy VRF Weighted', 'Buy VRF Exp. Weighted',
                              'Sell VRF', 'Sell VRF Weighted', 'Sell VRF Exp. Weighted',
                              'Buy/Sell Diff.', 'Buy/Sell Diff. Weighted', 'Buy/Sell Diff. Exp. Weighted',
-                             'Match Avg.', 'Match VRF', 'Match Rate (per min)'])
+                             'Match Avg.', 'Match VRF', 'Match Rate (per min)', 'Match Tot. Vol.', '24hr Vol. Equivalent', 'Relative Vol. Rate'])
+print()
 
 
 class myWebsocketClient(gdax.WebsocketClient):
@@ -151,6 +152,7 @@ class myWebsocketClient(gdax.WebsocketClient):
                 print('---- CHANGE ----')
                 
     def on_close(self):
+        print()
         print('Closing websocket.')
 
 
@@ -159,7 +161,7 @@ def display_data(data_type, backtest_index):
     if data_type == 'market':
         print()
         print('Market:       $' + "{:.2f}".format(market_price) + ' (' + "{:.2f}".format(spread) + ')')
-        print('24hr Vol:     $' + "{:.2f}".format(day_volume))
+        print('24hr Vol:      ' + "{:.2f}".format(day_volume))
         print()
         print('Low Ask:      $' + "{:.2f}".format(low_ask) + ' (' + "{:.2f}".format(low_ask_vol) + ')')
         print('High Bid:     $' + "{:.2f}".format(high_bid) + ' (' + "{:.2f}".format(high_bid_vol) + ')')
@@ -231,6 +233,9 @@ def display_data(data_type, backtest_index):
             print('Match Avg.:    ' + "{:.2f}".format(match_avg))
             print('Match VRF:     ' + "{:.2f}".format(match_volrateflow))
         print('Match Rate:    ' + "{:.2f}".format(match_rate) + ' matches/min')
+        print('Match Vol.:    ' + "{:.2f}".format(match_tot_abs))
+        print('24hr Equiv.:   ' + "{:.2f}".format(day_vol_equiv_rate))
+        print('Rel. Ratio:    ' + "{:.2f}".format(match_rate_relative))
     print()
 
 
@@ -319,6 +324,7 @@ while (True):
             sell_tot_weighted = 0.0
             sell_tot_weighted_exp = 0.0
             match_tot = 0.0
+            match_tot_abs = 0.0
 
             # CHECK FUNCTION WITHOUT FLOAT DECLARATION
             for y in range(0, buy_selected_length):
@@ -340,7 +346,9 @@ while (True):
             sell_avg_weighted = sell_tot_weighted / float(sell_selected_length)
             sell_avg_weighted_exp = sell_tot_weighted_exp / float(sell_selected_length)
             for y in range(0, match_selected_length):
-                match_tot += match_data_selected[y][1]
+                match_vol = match_data_selected[y][1]
+                match_tot += match_vol
+                match_tot_abs += abs(match_vol)
             match_avg = match_tot / float(match_selected_length)
 
             # Unweighted
@@ -358,6 +366,8 @@ while (True):
             # Other
             match_volrateflow = match_avg / float(backtest_intervals[x])    # Match volume per minute
             match_rate = float(match_selected_length) / float(backtest_intervals[x])    # Matches per minute
+            day_vol_equiv_rate = (day_volume / 1440.0) * float(backtest_intervals[x])   # Backtest interval equiv. rate for 24hr volume
+            match_rate_relative = match_tot_abs / day_vol_equiv_rate
 
             if debug_mode == True:
                 display_data('calc', backtest_intervals[x])
@@ -371,7 +381,7 @@ while (True):
                                          buy_avg, buy_avg_weighted, buy_avg_weighted_exp,
                                          sell_avg, sell_avg_weighted, sell_avg_weighted_exp,
                                          buysell_differential, buysell_differential_weighted, buysell_differential_weighted_exp,
-                                         match_avg, match_volrateflow, match_rate])
+                                         match_avg, match_volrateflow, match_rate, match_tot_abs, day_vol_equiv_rate, match_rate_relative])
 
         if log_active == False:
             if buy_length >= logging_threshold and sell_length >= logging_threshold and match_length >= logging_threshold_match:
@@ -394,13 +404,17 @@ while (True):
             elif debug_mode == True:
                 print('Waiting to accumulate sufficient data...')
                 print('>' + str(logging_threshold) + ' (buy/sell) / >' + str(logging_threshold_match) + ' (match)')
-                print('buy_selected_length   = ' + str(buy_selected_length))
-                print('sell_selected_length  = ' + str(sell_selected_length))
-                print('match_selected_length = ' + str(match_selected_length))
+                print('Buy Length   = ' + str(buy_length))
+                print('Sell Length  = ' + str(sell_length))
+                print('Match Length = ' + str(match_length))
             print()
                     
         time.sleep(loop_time)
-        
+
+    except KeyboardInterrupt:
+        wsClient.close()
+        sys.exit(0)
+
     except:
         print()
         print('ENCOUNTERED ERROR. RETRYING IN 10 SECONDS.')

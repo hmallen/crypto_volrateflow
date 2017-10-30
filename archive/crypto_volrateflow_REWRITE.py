@@ -12,9 +12,9 @@ import time
 debug_mode = True
 
 # Global constants
-log_threshold = 2000
-log_thresh_match = int(log_threshold / 20)
-data_length = log_threshold * 10
+logging_threshold = 1000
+logging_threshold_match = int(logging_threshold / 20)
+data_length = logging_threshold * 10
 data_length_match = int(data_length / 20)
 loop_time = 10  # Time delay between loops (seconds)
 
@@ -87,11 +87,17 @@ if not os.path.exists('logs'):
     os.makedirs('logs')
 else:
     print('Log directory found.')
+print()
 
 log_files = []   
 for x in range(0, len(backtest_intervals)):
     log_file = 'logs/' + dt_current + '--' + product + '--' + str(backtest_intervals[x]) + 'min--VRF.csv'
     log_files.append(log_file)
+
+for x in range(0, len(log_files)):
+    with open(log_files[x], 'a', newline='') as csv_file:
+        csv_writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        csv_writer.writerow(['Date/Time', ])
 
 
 class myWebsocketClient(gdax.WebsocketClient):
@@ -142,12 +148,83 @@ class myWebsocketClient(gdax.WebsocketClient):
 
 
 # Print data to console
-def display_data(data_type):
+def display_data(data_type, backtest_index):
     if data_type == 'market':
-        print('Stuff & Things')
+        print()
+        print('Market:       $' + "{:.2f}".format(market_price) + ' (' + "{:.2f}".format(spread) + ')')
+        print('24hr Vol:     $' + "{:.2f}".format(day_volume))
+        print()
+        print('Low Ask:      $' + "{:.2f}".format(low_ask) + ' (' + "{:.2f}".format(low_ask_vol) + ')')
+        print('High Bid:     $' + "{:.2f}".format(high_bid) + ' (' + "{:.2f}".format(high_bid_vol) + ')')
+        if spread_vol_differential > 0:
+            print('Vol. Diff.:   ' + '+' + "{:.2f}".format(spread_vol_differential) + ' [BUY HEAVY]')
+        elif spread_vol_differential < 0:
+            print('Vol. Diff.:   ' + '-' + "{:.2f}".format(abs(spread_vol_differential)) + ' [SELL HEAVY]')
+        else:
+            print('Vol. Diff.:    ' + "{:.2f}".format(spread_vol_differential) + ' [EVEN]')
 
     elif data_type == 'calc':
-        print('Stuff & Things')
+        print('[' + str(backtest_index) + ' min Backtest]')
+        print('--- UNWEIGHTED ---')
+        if buy_avg < 0:
+            print('Buy Avg.:     ' + "{:.2f}".format(buy_avg))
+            print('Buy VRF:      ' + "{:.2f}".format(buy_volrateflow))
+        else:
+            print('Buy Avg.:      ' + "{:.2f}".format(buy_avg))
+            print('Buy VRF:       ' + "{:.2f}".format(buy_volrateflow))
+        if sell_avg < 0:
+            print('Sell Avg.:    ' + "{:.2f}".format(sell_avg))
+            print('Sell VRF:     ' + "{:.2f}".format(sell_volrateflow))
+        else:
+            print('Sell Avg.:     ' + "{:.2f}".format(sell_avg))
+            print('Sell VRF:      ' + "{:.2f}".format(sell_volrateflow))
+        if buysell_differential < 0:
+            print('Differential: ' + "{:.2f}".format(buysell_differential))
+        else:
+            print('Differential:  ' + "{:.2f}".format(buysell_differential))
+        print('--- WEIGHTED ---')
+        if buy_avg_weighted < 0:
+            print('Buy Avg.:     ' + "{:.2f}".format(buy_avg_weighted))
+            print('Buy VRF:      ' + "{:.2f}".format(buy_volrateflow_weighted))
+        else:
+            print('Buy Avg.:      ' + "{:.2f}".format(buy_avg_weighted))
+            print('Buy VRF:       ' + "{:.2f}".format(buy_volrateflow_weighted))
+        if sell_avg_weighted < 0:
+            print('Sell Avg.:    ' + "{:.2f}".format(sell_avg_weighted))
+            print('Sell VRF:     ' + "{:.2f}".format(sell_volrateflow_weighted))
+        else:
+            print('Sell Avg.:     ' + "{:.2f}".format(sell_avg_weighted))
+            print('Sell VRF:      ' + "{:.2f}".format(sell_volrateflow_weighted))
+        if buysell_differential_weighted < 0:
+            print('Differential: ' + "{:.2f}".format(buysell_differential_weighted))
+        else:
+            print('Differential:  ' + "{:.2f}".format(buysell_differential_weighted))
+        print('--- EXP. WEIGHTED ---')
+        if buy_avg_weighted_exp < 0:
+            print('Buy Avg.:     ' + "{:.2f}".format(buy_avg_weighted_exp))
+            print('Buy VRF:      ' + "{:.2f}".format(buy_volrateflow_weighted_exp))
+        else:
+            print('Buy Avg.:      ' + "{:.2f}".format(buy_avg_weighted_exp))
+            print('Buy VRF:       ' + "{:.2f}".format(buy_volrateflow_weighted_exp))
+        if sell_avg_weighted_exp < 0:
+            print('Sell Avg.:    ' + "{:.2f}".format(sell_avg_weighted_exp))
+            print('Sell VRF:     ' + "{:.2f}".format(sell_volrateflow_weighted_exp))
+        else:
+            print('Sell Avg.:     ' + "{:.2f}".format(sell_avg_weighted_exp))
+            print('Sell VRF:      ' + "{:.2f}".format(sell_volrateflow_weighted_exp))
+        if buysell_differential_weighted_exp < 0:
+            print('Differential: ' + "{:.2f}".format(buysell_differential_weighted_exp))
+        else:
+            print('Differential:  ' + "{:.2f}".format(buysell_differential_weighted_exp))
+        print('--- OTHER ---')
+        if match_avg < 0:
+            print('Match Avg.:   ' + "{:.2f}".format(match_avg))
+            print('Match VRF:    ' + "{:.2f}".format(match_volrateflow))
+        else:
+            print('Match Avg.:    ' + "{:.2f}".format(match_avg))
+            print('Match VRF:     ' + "{:.2f}".format(match_volrateflow))
+        print('Match Rate:    ' + "{:.2f}".format(match_rate) + ' matches/min')
+    print()
 
 
 # Websocket start-up
@@ -188,7 +265,7 @@ while (True):
 
     if debug_mode == True:
         print('----------------------------------------')
-        display_data('market')
+        display_data('market', backtest_intervals[x])
 
     for x in range(0, len(backtest_intervals)):
         buy_length = len(buy_data)
@@ -229,8 +306,10 @@ while (True):
         # Perform calculations
         buy_tot = 0.0
         buy_tot_weighted = 0.0
+        buy_tot_weighted_exp = 0.0
         sell_tot = 0.0
         sell_tot_weighted = 0.0
+        sell_tot_weighted_exp = 0.0
         match_tot = 0.0
 
         # CHECK FUNCTION WITHOUT FLOAT DECLARATION
@@ -239,56 +318,73 @@ while (True):
             buy_price = buy_data_selected[y][2]
             buy_tot += buy_vol
             buy_tot_weighted += (1 - ((high_bid - buy_price) / high_bid)) * buy_vol
+            buy_tot_weighted_exp += pow((1 - ((high_bid - buy_price) / high_bid)), 2) * buy_vol
         buy_avg = buy_tot / float(buy_selected_length)
         buy_avg_weighted = buy_tot_weighted / float(buy_selected_length)
+        buy_avg_weighted_exp = buy_tot_weighted_exp / float(buy_selected_length)
         for y in range(0, sell_selected_length):
             sell_vol = sell_data_selected[y][1]
             sell_price = sell_data_selected[y][2]
             sell_tot += sell_vol
             sell_tot_weighted += (1 - ((sell_price - low_ask) / low_ask)) * sell_vol
+            sell_tot_weighted_exp += pow((1 - ((sell_price - low_ask) / low_ask)), 2) * sell_vol
         sell_avg = sell_tot / float(sell_selected_length)
         sell_avg_weighted = sell_tot_weighted / float(sell_selected_length)
+        sell_avg_weighted_exp = sell_tot_weighted_exp / float(sell_selected_length)
         for y in range(0, match_selected_length):
             match_tot += match_data_selected[y][1]
         match_avg = match_tot / float(match_selected_length)
 
+        # Unweighted
         buy_volrateflow = buy_avg / float(backtest_intervals[x])    # Buy volume per minute added to orderbook
         sell_volrateflow = sell_avg / float(backtest_intervals[x])  # Sell volume per minute added to orderbook
+        buysell_differential = buy_volrateflow - sell_volrateflow  # Buy/sell volume rate flow differential
+        # Weighted
+        buy_volrateflow_weighted = buy_avg_weighted / float(backtest_intervals[x])    # Buy volume per minute added to orderbook
+        sell_volrateflow_weighted = sell_avg_weighted / float(backtest_intervals[x])  # Sell volume per minute added to orderbook
+        buysell_differential_weighted = buy_volrateflow_weighted - sell_volrateflow_weighted  # Buy/sell volume rate flow differential
+        # Exponential Weighted
+        buy_volrateflow_weighted_exp = buy_avg_weighted_exp / float(backtest_intervals[x])    # Buy volume per minute added to orderbook
+        sell_volrateflow_weighted_exp = sell_avg_weighted_exp / float(backtest_intervals[x])  # Sell volume per minute added to orderbook
+        buysell_differential_weighted_exp = buy_volrateflow_weighted_exp - sell_volrateflow_weighted_exp  # Buy/sell volume rate flow differential
+        # Other
         match_volrateflow = match_avg / float(backtest_intervals[x])    # Match volume per minute
         match_rate = float(match_selected_length) / float(backtest_intervals[x])    # Matches per minute
-        buysell_differential = buy_volrateflow - sell_volrateflow  # Buy/sell volume rate flow differential
 
         if debug_mode == True:
-            display_data('calc')
-            print('----------------------------------------')
-            print()
+            display_data('calc', backtest_intervals[x])
 
         # Log to csv or check if logging should be enabled
         if log_active == True:
-            print('Stuff & Things')
-            
-        else:
-            if buy_length >= logging_threshold and sell_length >= logging_threshold and match_length >= logging_threshold_match:
-                print('Logging threshold achieved. Waiting for backtesting duration to elapse.')
-                # Wait to collect enough data for backtesting intervals before beginning logging
-                time_elapsed_buylist = float((buy_data[buy_length_index][0] - buy_data[0][0]).total_seconds())
-                time_elapsed_buylist_min = time_elapsed_buylist / 60.0
-                time_elapsed_selllist = float((sell_data[sell_length_index][0] - sell_data[0][0]).total_seconds())
-                time_elapsed_selllist_min = time_elapsed_selllist / 60.0
-                time_elapsed_matchlist = float((match_data[match_length_index][0] - match_data[0][0]).total_seconds())
-                time_elapsed_matchlist_min = time_elapsed_matchlist / 60.0
-                if debug_mode == True:
-                    print('Buy Time:   ' + str(time_elapsed_buylist_min) + 'min')
-                    print('Sell Time:  ' + str(time_elapsed_selllist_min) + 'min')
-                    print('Match Time: ' + str(time_elapsed_matchlist_min) + 'min')
-                if time_elapsed_buylist_min >= float(backtest_intervals[(len(backtest_intervals) - 1)]) and time_elapsed_selllist_min >= float(backtest_intervals[(len(backtest_intervals) - 1)]) and time_elapsed_matchlist_min >= float(backtest_intervals[(len(backtest_intervals) - 1)]):
-                    log_active = True
-                    print('Backtesting interval duration reached. Logging activated.')
-                    
-            elif debug_mode == True:
-                print('buy_selected_length   = ' + str(buy_selected_length))
-                print('sell_selected_length  = ' + str(sell_selected_length))
-                print('match_selected_length = ' + str(match_selected_length))
             print()
+            with open(log_files[x], 'a', newline='') as csv_file:
+                csv_writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                csv_writer.writerow([datetime.datetime.now()])
 
-        time.sleep(loop_time)
+    if log_active == False:
+        if buy_length >= logging_threshold and sell_length >= logging_threshold and match_length >= logging_threshold_match:
+            print('Logging threshold achieved. Waiting for backtesting duration to elapse...')
+            # Wait to collect enough data for backtesting intervals before beginning logging
+            time_elapsed_buylist = float((buy_data[buy_length_index][0] - buy_data[0][0]).total_seconds())
+            time_elapsed_buylist_min = time_elapsed_buylist / 60.0
+            time_elapsed_selllist = float((sell_data[sell_length_index][0] - sell_data[0][0]).total_seconds())
+            time_elapsed_selllist_min = time_elapsed_selllist / 60.0
+            time_elapsed_matchlist = float((match_data[match_length_index][0] - match_data[0][0]).total_seconds())
+            time_elapsed_matchlist_min = time_elapsed_matchlist / 60.0
+            if debug_mode == True:
+                print('Buy Time:   ' + "{:.2f}".format(time_elapsed_buylist_min) + 'min')
+                print('Sell Time:  ' + "{:.2f}".format(time_elapsed_selllist_min) + 'min')
+                print('Match Time: ' + "{:.2f}".format(time_elapsed_matchlist_min) + 'min')
+            if time_elapsed_buylist_min >= float(backtest_intervals[(len(backtest_intervals) - 1)]) and time_elapsed_selllist_min >= float(backtest_intervals[(len(backtest_intervals) - 1)]) and time_elapsed_matchlist_min >= float(backtest_intervals[(len(backtest_intervals) - 1)]):
+                log_active = True
+                print('Backtesting interval duration reached. Logging activated.')
+                
+        elif debug_mode == True:
+            print('Waiting to accumulate sufficient data...')
+            print('>' + str(logging_threshold) + ' (buy/sell) / >' + str(logging_threshold_match) + ' (match)')
+            print('buy_selected_length   = ' + str(buy_selected_length))
+            print('sell_selected_length  = ' + str(sell_selected_length))
+            print('match_selected_length = ' + str(match_selected_length))
+        print()
+                
+    time.sleep(loop_time)

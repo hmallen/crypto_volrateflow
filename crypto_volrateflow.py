@@ -10,7 +10,7 @@ import sys
 import time
 
 # Global constants
-logging_threshold = 1000
+logging_threshold = 2000
 logging_threshold_match = int(logging_threshold / 20)
 data_length = logging_threshold * 10
 data_length_match = int(data_length / 20)
@@ -32,7 +32,7 @@ print('2: LTC-USD')
 print('3: ETH-USD')
 print()
 
-user_product = input('Plese choose product: ')
+user_product = input('Please choose product: ')
 if user_product == '1':
     product = 'BTC-USD'
     print('BTC-USD market selected.')
@@ -112,7 +112,10 @@ for x in range(0, len(backtest_intervals)):
     log_file = 'logs/' + dt_current + '--' + product + '--' + str(backtest_intervals[x]) + 'min--VRF.csv'
     log_files.append(log_file)
 
-print('Writing header to csv file.')
+if len(log_files) == 1:
+    print('Creating csv file and writing header.')
+else:
+    print('Creating csv files and writing headers.')
 for x in range(0, len(log_files)):
     with open(log_files[x], 'a', newline='') as csv_file:
         csv_writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
@@ -123,7 +126,7 @@ for x in range(0, len(log_files)):
                              'Buy VRF', 'Buy VRF Weighted', 'Buy VRF Exp. Weighted',
                              'Sell VRF', 'Sell VRF Weighted', 'Sell VRF Exp. Weighted',
                              'Buy/Sell Diff.', 'Buy/Sell Diff. Weighted', 'Buy/Sell Diff. Exp. Weighted',
-                             'Match Avg.', 'Match VRF', 'Match Rate (per min)', 'Match Tot. Vol.', '24hr Vol. Equivalent', 'Relative Vol. Rate'])
+                             'Match Avg.', 'Match VRF', 'Match Rate (per min)', 'Match Tot. Vol.', '24hr Vol. Equivalent', 'Relative Match Vol. Rate'])
 print()
 
 
@@ -399,6 +402,8 @@ while (True):
                                          high_bid, high_bid_vol, low_ask, low_ask_vol, spread, spread_vol_differential,
                                          buy_avg, buy_avg_weighted, buy_avg_weighted_exp,
                                          sell_avg, sell_avg_weighted, sell_avg_weighted_exp,
+                                         buy_volrateflow, buy_volrateflow_weighted, buy_volrateflow_weighted_exp,
+                                         sell_volrateflow, sell_volrateflow_weighted, sell_volrateflow_weighted_exp,
                                          buysell_differential, buysell_differential_weighted, buysell_differential_weighted_exp,
                                          match_avg, match_volrateflow, match_rate, match_tot_abs, day_vol_equiv_rate, match_rate_relative])
 
@@ -422,7 +427,7 @@ while (True):
                     
             elif debug_mode == True:
                 print('Waiting to accumulate sufficient data...')
-                print('>' + str(logging_threshold) + ' (buy/sell) / >' + str(logging_threshold_match) + ' (match)')
+                print('>' + str(logging_threshold) + ' buy/sell & >' + str(logging_threshold_match) + ' match')
                 print('Buy Length   = ' + str(buy_length))
                 print('Sell Length  = ' + str(sell_length))
                 print('Match Length = ' + str(match_length))

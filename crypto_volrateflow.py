@@ -13,7 +13,7 @@ import time
 logging_threshold = 2000
 logging_threshold_match = int(logging_threshold / 20)
 data_length = logging_threshold * 10
-data_length_match = int(data_length / 20)
+data_length_match = int(data_length / 10)
 loop_time = 10  # Time delay between loops (seconds)
 
 # Global variables/lists

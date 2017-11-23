@@ -10,7 +10,7 @@ import sys
 import time
 
 # Debug constants
-long_headers = False    # False: Use variable names for csv header / True: Use long, human-readable names for csv header
+long_header = False    # False: Use variable names for csv header / True: Use long, human-readable names for csv header
 
 # Global constants
 logging_threshold = 2000
@@ -119,6 +119,7 @@ if len(log_files) == 1:
     print('Creating csv file and writing header.')
 else:
     print('Creating csv files and writing headers.')
+
 if long_header == True:
     for x in range(0, len(log_files)):
         with open(log_files[x], 'a', newline='') as csv_file:
